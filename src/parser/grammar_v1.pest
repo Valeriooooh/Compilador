@@ -1,0 +1,129 @@
+ws = _{( " " | "\r\n" | "\n" | "\t" )}
+
+//NUMERIC
+unsigned = {(ASCII_DIGIT)+}
+integer = { ("-")? ~ (ASCII_DIGIT)+ }
+float = { ("-")? ~ (ASCII_DIGIT)+ ~ "." ~ ((ASCII_DIGIT)+)? }
+
+semicolon = {(";")}
+comma = {(",")}
+
+ident = { (ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC)* }
+
+//OPS
+ArithmOP = {
+    (
+        "+"
+      | "-"
+      | "*"
+      | "/"
+    )
+}
+BoolOP = {
+    (
+        "&&"
+      | "||"
+      |"=="
+      |"!="
+      |"!"
+    )
+}
+OP = {
+    (ArithmOP | BoolOP)
+}
+
+
+BOOLEAN = {
+    "bool"
+}
+
+UNSIGNED_INT = {
+    (
+       "u8"
+      | "u16"
+      | "u32"
+      | "u64"
+      | "u128"
+      | "usize"
+    )
+}
+
+SIGNED_INT = {
+    (
+        "i8"
+      | "i16"
+      | "i32"
+      | "i64"
+      | "i128"
+      | "isize"
+    )
+}
+FLOATING = {
+    (
+       "f32"
+      | "f64"
+    )
+}
+
+Type = {
+    (
+        ( UNSIGNED_INT | SIGNED_INT | FLOATING | BOOLEAN | (ident))
+    )
+}
+
+leftBracket = { "{" }
+rightBracket = { "}" }
+leftParen = { "(" }
+rightParen = { ")" }
+
+statement = {(let|return)}
+
+let = { "let" ~ (ws)+ ~ ident ~ ( (ws)* ~ ":" ~ (ws)* ~ Type)? ~ (ws)? ~ ("=") ~ (ws)? ~ (expr| ident) ~ (ws)? ~ semicolon }
+
+return = { "return" ~ (ws)+ ~ (expr|"void") ~ (ws)* ~ ";" ~ (ws)* }
+
+lambda = { leftParen ~ (ws)* ~ (ident ~ ( (ws)* ~ ":" ~ (ws)* ~ Type)? )? ~ (ws)* ~ rightParen
+    ~ (leftBracket) ~ (ws)*
+    ~ (
+        (ident | unsigned | integer | float ) ~ ( ((ws)*) ~ (OP) ~ ((ws)*) ~ (expr))?)
+    ~ (ws)* ~ (rightBracket) }
+
+
+expr = {
+  (
+
+        (
+            (  ident | unsigned | integer | float  ) ~ ( ((ws)*) ~ (OP) ~ ((ws)*) ~ (expr))?
+        )
+
+      |
+        (leftBracket) ~ (ws)* ~ (( let |return | ident | unsigned | integer | float ) ~ ( ((ws)*) ~ (OP) ~ ((ws)*) ~ (expr))?) ~ (ws)* ~ (rightBracket)
+      |
+        (statement| lambda)
+    )
+}
+
+TypeOf = { (ws)* ~ ":" ~ (ws)* ~ Type }
+
+
+FunctionDef = {
+    (
+    "fun" ~ (ws)+ ~ ident ~ (ws)* ~ leftParen ~ (ws)* ~ ( (ident ~ (TypeOf)?)? ~ (ws)* ~ rightParen )
+    |"fun" ~ (ws)+ ~ ident ~ (ws)* ~ leftParen ~ (ws)* ~ ( (ident ~ (TypeOf)?) ~ (ws)* ~ (comma ~(ws)* ~ ident ~ (TypeOf)?)* ~ (ws)* ~ rightParen )
+    ) ~
+    (TypeOf)?
+    ~ (ws)* ~ leftBracket ~ ((ws)* ~ (return | let | expr) ~ (ws)*)* ~ rightBracket
+}
+
+t = {
+    (
+      FunctionDef
+    | statement
+    | expr
+    | ws
+    )
+}
+
+token = { t ~ (ws ~ t)* }
+
+file = _{ SOI ~ (ws)* ~ (token)* ~ (ws)* ~ EOI }

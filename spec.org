@@ -1,0 +1,38 @@
+#+title: Specification
+
+* function  definition
+#+begin_src
+fun foo(): type{
+  // statements
+}
+#+end_src
+* statements
+** variable definition
+#+begin_src
+let identifier: type;
+#+end_src
+
+** variable declaration
+#+begin_src
+let identifier: type = expression;
+#+end_src
+** if expression
+#+begin_src
+if expression {
+    //statements
+}
+#+end_src
+
+ or
+
+#+begin_src
+if expression {
+    //statements
+}else{
+    //statements
+}
+#+end_src
+** return
+#+begin_src
+return expression;
+#+end_src

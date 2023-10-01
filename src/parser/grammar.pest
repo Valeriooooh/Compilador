@@ -1,0 +1,23 @@
+number = _{ (ASCII_DIGIT)+ }
+
+IDENTIFIER = { ("_")* ~  (ASCII_ALPHA)+ ~ (ASCII_ALPHANUMERIC | "_")* }
+
+UNSIGNED_INTEGER = { !("-") ~ number+}
+SIGNED_INTEGER = { ("-")? ~ number+}
+FLOATING_POINT = { (("-")? ~ number+)? ~ (".") ~ (!("-") ~ number+)}
+
+
+
+
+
+
+
+
+TOKEN = _{
+    (IDENTIFIER
+    |FLOATING_POINT
+    |UNSIGNED_INTEGER
+    |SIGNED_INTEGER)
+}
+
+file = _{ SOI ~ (WHITE_SPACE)* ~ (TOKEN)? ~ ((WHITE_SPACE)+ ~ (TOKEN))* ~ (WHITE_SPACE)* ~ EOI}
