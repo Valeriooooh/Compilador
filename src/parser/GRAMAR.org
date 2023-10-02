@@ -1,10 +1,18 @@
+#+title: Gramar
+#+Property: header-args :tangle grammar.pest
+
+* Types
+the types of the *language*
+#+begin_src pest
 number = _{ (ASCII_DIGIT)+ }
 IDENTIFIER = { ("_")* ~  (ASCII_ALPHA)+ ~ (ASCII_ALPHANUMERIC | "_")* }
 UNSIGNED_INTEGER = { !("-") ~ number+}
 SIGNED_INTEGER = { ("-")? ~ number+}
 FLOATING_POINT = { (("-")? ~ number+)? ~ (".") ~ (!("-") ~ number+)}
 BOOLEAN = {"false"|"true"}
-
+#+end_src
+* Operators
+#+begin_src pest
 BOOLEAN_OPERATOR = {
     "=="
     |"&&"
@@ -24,7 +32,9 @@ ALGEBRIC_OPERATOR = {
 OPERATOR = {
     (ALGEBRIC_OPERATOR|BOOLEAN_OPERATOR|BITWISE_OPERATOR)
 }
-
+#+end_src
+* TOKEN
+#+begin_src pest
 TOKEN = _{
     (IDENTIFIER
     |OPERATOR
@@ -33,5 +43,8 @@ TOKEN = _{
     |UNSIGNED_INTEGER
     |SIGNED_INTEGER)
 }
-
+#+end_src
+* File
+#+begin_src pest
 file = _{ SOI ~ (WHITE_SPACE)* ~ (TOKEN)? ~ ((WHITE_SPACE)+ ~ (TOKEN))* ~ (WHITE_SPACE)* ~ EOI}
+#+end_src
