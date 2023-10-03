@@ -1,18 +1,40 @@
+WHITE_SPACE = _{ " " | "\n\r" | "\n" |"\t"}
 number = _{ (ASCII_DIGIT)+ }
-IDENTIFIER = { ("_")* ~  (ASCII_ALPHA)+ ~ (ASCII_ALPHANUMERIC | "_")* }
-UNSIGNED_INTEGER = { !("-") ~ number+}
-SIGNED_INTEGER = { ("-")? ~ number+}
-FLOATING_POINT = { (("-")? ~ number+)? ~ (".") ~ (!("-") ~ number+)}
+IDENTIFIER = { (("_")* ~  (ASCII_ALPHA)+ ~ (ASCII_ALPHANUMERIC | "_")*) }
+UNSIGNED_INTEGER = { !("-") ~ number}
+SIGNED_INTEGER = { ("-"|"+")? ~ number}
+FLOATING_POINT = { (("-"|"+")? ~ number)? ~ (".") ~ (!("-") ~ number)}
+STRING = ${ "\"" ~ INNER_STR ~ "\"" }
+INNER_STR = @{ CHAR* }
+CHAR = {
+    !("\"" | "\\") ~ ANY
+    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}
+ALGEBRIC = _{
+    FLOATING_POINT
+    |UNSIGNED_INTEGER
+    |SIGNED_INTEGER}
 BOOLEAN = {"false"|"true"}
+
+LP =_{"("}
+RP =_{")"}
+LB =_{"{"}
+RB =_{"}"}
+SEMICOLON = _{";"}
 
 BOOLEAN_OPERATOR = {
     "=="
     |"&&"
+    |"!="
     |"||"
+    |">"
+    |"<"
 }
 BITWISE_OPERATOR = {
     "&"
     |"|"
+    |"~"
 }
 ALGEBRIC_OPERATOR = {
     "+" // addition
@@ -25,13 +47,74 @@ OPERATOR = {
     (ALGEBRIC_OPERATOR|BOOLEAN_OPERATOR|BITWISE_OPERATOR)
 }
 
+VOID_TYPE  = {"void"  | "()"}
+BOOL_TYPE  = {"boolean"  | "bool"}
+INT_TYPE   = {"int"   | "i8" | "i16" | "i32" | "i64" | "i128" |"isize" }
+UINT_TYPE  = {"uint"  | "u8" | "u16" | "u32" | "u64" | "u128" |"usize"}
+FLOAT_TYPE = {"float" | "f32" | "f64" | "f128"}
+USER_TYPE  = { ("_")* ~  (ASCII_ALPHA)+ ~ (ASCII_ALPHANUMERIC | "_")* }
+STRING_TYPE = {"string"|"str"}
+
+TYPE = {
+    BOOL_TYPE
+    |STRING_TYPE
+    |VOID_TYPE
+    |INT_TYPE
+    |UINT_TYPE
+    |USER_TYPE
+        }
+
+TYPEOF = {":" ~ (WHITE_SPACE)* ~ (TYPE) }
+
+FUNCTION_PARAMETERS = { (IDENTIFIER ~  (WHITE_SPACE)* ~ (TYPEOF)) ~ ("," ~  (WHITE_SPACE)* ~ (IDENTIFIER ~  (WHITE_SPACE)* ~ (TYPEOF)))*  }
+
+FUNCTION = {
+"fun" ~ (WHITE_SPACE)+ ~ IDENTIFIER ~ (WHITE_SPACE)* ~ LP ~ (WHITE_SPACE)* ~ FUNCTION_PARAMETERS? ~ (WHITE_SPACE)* ~ RP ~ (WHITE_SPACE)* ~ TYPEOF ~ (WHITE_SPACE)* ~ LB ~ (WHITE_SPACE)* ~ (STATEMENT ~ WHITE_SPACE*)* ~ RB
+        }
+
+BOOLEAN_BASIC_EXPR = {( BOOLEAN | IDENTIFIER | FUNCTION_CALL )}
+BOOLEAN_EXPRESSION = {
+        BOOLEAN_BASIC_EXPR
+        |((BOOLEAN_BASIC_EXPR) ~ WHITE_SPACE* ~ BOOLEAN_OPERATOR ~ WHITE_SPACE* ~ (BOOLEAN_EXPRESSION))
+        }
+
+ALGEBRIC_EXPRESSION = {
+        ((ALGEBRIC |IDENTIFIER) ~ WHITE_SPACE* ~ ALGEBRIC_OPERATOR ~ WHITE_SPACE* ~ (ALGEBRIC|IDENTIFIER))
+        |(ALGEBRIC |IDENTIFIER)
+        }
+
+
+EXPRESSION = {
+STRING
+|ALGEBRIC_EXPRESSION
+|BOOLEAN_EXPRESSION
+|IDENTIFIER
+}
+
+LET = {"letm"|"let"}
+VARIABLE = {
+    (IDENTIFIER ~ WHITE_SPACE* ~ "=" ~ WHITE_SPACE* ~ EXPRESSION ~ WHITE_SPACE* ~ SEMICOLON)
+    |(LET ~ WHITE_SPACE+ ~ IDENTIFIER ~ WHITE_SPACE* ~ TYPEOF ~ WHITE_SPACE* ~ SEMICOLON)
+    |(LET ~ WHITE_SPACE+ ~ IDENTIFIER ~ WHITE_SPACE* ~ TYPEOF? ~ WHITE_SPACE* ~ "=" ~ WHITE_SPACE* ~ EXPRESSION ~ WHITE_SPACE* ~ SEMICOLON)}
+
+RETURN = {("ret" ~ WHITE_SPACE+ ~ EXPRESSION ~ WHITE_SPACE* ~ SEMICOLON)}
+
+FUNCTION_ARGS = { ((IDENTIFIER|EXPRESSION) ~  (WHITE_SPACE)*) ~ ("," ~  (WHITE_SPACE)* ~ ((IDENTIFIER|EXPRESSION) ~  (WHITE_SPACE)*))*  }
+FUNCTION_CALL = { (IDENTIFIER) ~ WHITE_SPACE* ~ LP ~ WHITE_SPACE* ~ FUNCTION_ARGS? ~ WHITE_SPACE* ~ RP ~ WHITE_SPACE* ~ SEMICOLON }
+
+IF_STATEMENT = { "if" ~ WHITE_SPACE* ~ LP ~ WHITE_SPACE* ~ BOOLEAN_EXPRESSION ~ WHITE_SPACE* ~ RP ~ WHITE_SPACE* ~  LB ~ WHITE_SPACE* ~
+(STATEMENT ~ WHITE_SPACE*)* ~ RB }
+
+STATEMENT = _{
+    RETURN
+    |IF_STATEMENT
+    |FUNCTION_CALL
+    |VARIABLE
+}
+
 TOKEN = _{
-    (IDENTIFIER
-    |OPERATOR
-    |BOOLEAN
-    |FLOATING_POINT
-    |UNSIGNED_INTEGER
-    |SIGNED_INTEGER)
+    STATEMENT
+    |FUNCTION
 }
 
 file = _{ SOI ~ (WHITE_SPACE)* ~ (TOKEN)? ~ ((WHITE_SPACE)+ ~ (TOKEN))* ~ (WHITE_SPACE)* ~ EOI}

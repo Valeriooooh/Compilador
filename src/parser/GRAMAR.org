@@ -1,26 +1,53 @@
 #+title: Gramar
 #+Property: header-args :tangle grammar.pest
 
-* Types
+* BASIC types
 the types of the *language*
 #+begin_src pest
+WHITE_SPACE = _{ " " | "\n\r" | "\n" |"\t"}
 number = _{ (ASCII_DIGIT)+ }
-IDENTIFIER = { ("_")* ~  (ASCII_ALPHA)+ ~ (ASCII_ALPHANUMERIC | "_")* }
-UNSIGNED_INTEGER = { !("-") ~ number+}
-SIGNED_INTEGER = { ("-")? ~ number+}
-FLOATING_POINT = { (("-")? ~ number+)? ~ (".") ~ (!("-") ~ number+)}
+IDENTIFIER = { (("_")* ~  (ASCII_ALPHA)+ ~ (ASCII_ALPHANUMERIC | "_")*) }
+UNSIGNED_INTEGER = { !("-") ~ number}
+SIGNED_INTEGER = { ("-"|"+")? ~ number}
+FLOATING_POINT = { (("-"|"+")? ~ number)? ~ (".") ~ (!("-") ~ number)}
+STRING = ${ "\"" ~ INNER_STR ~ "\"" }
+INNER_STR = @{ CHAR* }
+CHAR = {
+    !("\"" | "\\") ~ ANY
+    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}
+ALGEBRIC = _{
+    FLOATING_POINT
+    |UNSIGNED_INTEGER
+    |SIGNED_INTEGER}
 BOOLEAN = {"false"|"true"}
 #+end_src
+
+* Separators
+#+begin_src pest
+LP =_{"("}
+RP =_{")"}
+LB =_{"{"}
+RB =_{"}"}
+SEMICOLON = _{";"}
+#+end_src
+
 * Operators
+
 #+begin_src pest
 BOOLEAN_OPERATOR = {
     "=="
     |"&&"
+    |"!="
     |"||"
+    |">"
+    |"<"
 }
 BITWISE_OPERATOR = {
     "&"
     |"|"
+    |"~"
 }
 ALGEBRIC_OPERATOR = {
     "+" // addition
@@ -33,15 +60,100 @@ OPERATOR = {
     (ALGEBRIC_OPERATOR|BOOLEAN_OPERATOR|BITWISE_OPERATOR)
 }
 #+end_src
+
+* Type Definition
+#+begin_src pest
+VOID_TYPE  = {"void"  | "()"}
+BOOL_TYPE  = {"boolean"  | "bool"}
+INT_TYPE   = {"int"   | "i8" | "i16" | "i32" | "i64" | "i128" |"isize" }
+UINT_TYPE  = {"uint"  | "u8" | "u16" | "u32" | "u64" | "u128" |"usize"}
+FLOAT_TYPE = {"float" | "f32" | "f64" | "f128"}
+USER_TYPE  = { ("_")* ~  (ASCII_ALPHA)+ ~ (ASCII_ALPHANUMERIC | "_")* }
+STRING_TYPE = {"string"|"str"}
+
+TYPE = {
+    BOOL_TYPE
+    |STRING_TYPE
+    |VOID_TYPE
+    |INT_TYPE
+    |UINT_TYPE
+    |USER_TYPE
+        }
+
+TYPEOF = {":" ~ (WHITE_SPACE)* ~ (TYPE) }
+#+end_src
+
+* Function declaration
+
+#+begin_src pest
+FUNCTION_PARAMETERS = { (IDENTIFIER ~  (WHITE_SPACE)* ~ (TYPEOF)) ~ ("," ~  (WHITE_SPACE)* ~ (IDENTIFIER ~  (WHITE_SPACE)* ~ (TYPEOF)))*  }
+
+FUNCTION = {
+"fun" ~ (WHITE_SPACE)+ ~ IDENTIFIER ~ (WHITE_SPACE)* ~ LP ~ (WHITE_SPACE)* ~ FUNCTION_PARAMETERS? ~ (WHITE_SPACE)* ~ RP ~ (WHITE_SPACE)* ~ TYPEOF ~ (WHITE_SPACE)* ~ LB ~ (WHITE_SPACE)* ~ (STATEMENT ~ WHITE_SPACE*)* ~ RB
+        }
+#+end_src
+
+* EXPRESSION
+#+begin_src pest
+BOOLEAN_BASIC_EXPR = {( BOOLEAN | IDENTIFIER | FUNCTION_CALL )}
+BOOLEAN_EXPRESSION = {
+        BOOLEAN_BASIC_EXPR
+        |((BOOLEAN_EXPRESSION) ~ WHITE_SPACE* ~ BOOLEAN_OPERATOR ~ WHITE_SPACE* ~ (BOOLEAN_EXPRESSION))
+        }
+
+ALGEBRIC_EXPRESSION = {
+        ((ALGEBRIC |IDENTIFIER) ~ WHITE_SPACE* ~ ALGEBRIC_OPERATOR ~ WHITE_SPACE* ~ (ALGEBRIC|IDENTIFIER))
+        |(ALGEBRIC |IDENTIFIER)
+        }
+
+
+EXPRESSION = {
+STRING
+|ALGEBRIC_EXPRESSION
+|BOOLEAN_EXPRESSION
+|IDENTIFIER
+}
+#+end_src
+* Variable
+** Declaration
+#+begin_src pest
+LET = {"letm"|"let"}
+VARIABLE = {
+    (IDENTIFIER ~ WHITE_SPACE* ~ "=" ~ WHITE_SPACE* ~ EXPRESSION ~ WHITE_SPACE* ~ SEMICOLON)
+    |(LET ~ WHITE_SPACE+ ~ IDENTIFIER ~ WHITE_SPACE* ~ TYPEOF ~ WHITE_SPACE* ~ SEMICOLON)
+    |(LET ~ WHITE_SPACE+ ~ IDENTIFIER ~ WHITE_SPACE* ~ TYPEOF? ~ WHITE_SPACE* ~ "=" ~ WHITE_SPACE* ~ EXPRESSION ~ WHITE_SPACE* ~ SEMICOLON)}
+#+end_src
+
+* RETURN
+#+begin_src pest
+RETURN = {("ret" ~ WHITE_SPACE+ ~ EXPRESSION ~ WHITE_SPACE* ~ SEMICOLON)}
+#+end_src
+* FUNCTION CALL
+#+begin_src pest
+FUNCTION_ARGS = { ((IDENTIFIER|EXPRESSION) ~  (WHITE_SPACE)*) ~ ("," ~  (WHITE_SPACE)* ~ ((IDENTIFIER|EXPRESSION) ~  (WHITE_SPACE)*))*  }
+FUNCTION_CALL = { (IDENTIFIER) ~ WHITE_SPACE* ~ LP ~ WHITE_SPACE* ~ FUNCTION_ARGS? ~ WHITE_SPACE* ~ RP ~ WHITE_SPACE* ~ SEMICOLON }
+#+end_src
+
+* CONTROL STRUCTURES
+** IF
+#+begin_src pest
+IF_STATEMENT = { "if" ~ WHITE_SPACE* ~ LP ~ WHITE_SPACE* ~ BOOLEAN_EXPRESSION ~ WHITE_SPACE* ~ RP ~ WHITE_SPACE* ~  LB ~ WHITE_SPACE* ~
+(STATEMENT ~ WHITE_SPACE*)* ~ RB }
+#+end_src
+* STATEMENT
+#+begin_src pest
+STATEMENT = _{
+    RETURN
+    |IF_STATEMENT
+    |FUNCTION_CALL
+    |VARIABLE
+}
+#+end_src
 * TOKEN
 #+begin_src pest
 TOKEN = _{
-    (IDENTIFIER
-    |OPERATOR
-    |BOOLEAN
-    |FLOATING_POINT
-    |UNSIGNED_INTEGER
-    |SIGNED_INTEGER)
+    STATEMENT
+    |FUNCTION
 }
 #+end_src
 * File
